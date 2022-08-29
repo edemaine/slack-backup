@@ -21,6 +21,12 @@ import json
 # When using Bolt, you can use either `app.client` or the `client` passed to listeners.
 client = WebClient(token=TOKEN)
 
+def save_json(data, filename):
+  print('  Saving to', filename)
+  os.makedirs(os.path.dirname(filename), mode=0o700, exist_ok=True)
+  with open(filename, 'w') as outfile:
+    json.dump(data, outfile, indent=2)
+
 def backup_channel(channel_name, channel_id):
   try:
     print('Getting messages from', channel_name)
@@ -34,13 +40,8 @@ def backup_channel(channel_name, channel_id):
       print("\tGetting more...")
       result = client.conversations_history(channel=channel_id, cursor=result['response_metadata']['next_cursor'])
       all_messages += result["messages"]
-    # Save to disk
-    os.makedirs(f'backup/{channel_name}', mode=0o700, exist_ok=True)
-    filename = f'backup/{channel_name}/all.json'
     print(f'  We have downloaded {len(all_messages)} messages from {channel_name}.')
-    print('  Saving to', filename)
-    with open(filename, 'w') as outfile:
-      json.dump(all_messages, outfile, indent=2)
+    save_json(all_messages, f'backup/{channel_name}/all.json')
   except SlackApiError as e:
       print("Error using conversation: {}".format(e))
 
@@ -62,10 +63,7 @@ def backup_all_channels():
   except SlackApiError as e:
     print("Error using conversation: {}".format(e))
     return
-  filename = 'backup/channels.json'
-  print('  Saving to', filename)
-  with open(filename, 'w') as outfile:
-    json.dump(channels, outfile, indent=2)
+  save_json(channels, 'backup/channels.json')
   for channel in channels:
     backup_channel(channel['name'], channel['id'])
 
@@ -78,10 +76,7 @@ def backup_all_users():
   except SlackApiError as e:
     print("Error using conversation: {}".format(e))
     return
-  filename = 'backup/users.json'
-  print('  Saving to', filename)
-  with open(filename, 'w') as outfile:
-    json.dump(users, outfile, indent=2)
+  save_json(users, 'backup/users.json')
 
 if __name__ == "__main__":
   backup_all_users()
