@@ -10,6 +10,7 @@ Then provide the bot token to this script with the list of channels.
 
 import os
 TOKEN = os.environ['TOKEN']  # provide bot or user token (preferably user)
+FILE_TOKEN = os.environ.get('FILE_TOKEN')
 os.makedirs('backup', mode=0o700, exist_ok=True)
 
 # Import WebClient from Python SDK (github.com/slackapi/python-slack-sdk)
@@ -41,6 +42,17 @@ def backup_channel(channel_name, channel_id):
       result = client.conversations_history(channel=channel_id, cursor=result['response_metadata']['next_cursor'])
       all_messages += result["messages"]
     print(f'  We have downloaded {len(all_messages)} messages from {channel_name}.')
+
+    # Rewrite private URLs to have token, like Slack's public dump
+    if FILE_TOKEN:
+      for message in all_messages:
+        if 'files' in message:
+          for file in message['files']:
+            for key, value in file.items():
+              if (key.startswith('url_private') or key.startswith('thumb')) \
+                and isinstance(value, str) and value.startswith('https://'):
+                file[key] = value + '?t=' + FILE_TOKEN
+
     save_json(all_messages, f'backup/{channel_name}/all.json')
   except SlackApiError as e:
       print("Error using conversation: {}".format(e))
