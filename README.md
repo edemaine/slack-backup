@@ -8,8 +8,10 @@ The produced dump is in the same format produced by an
 
 The intended use-case for moving old Slack content over to a new
 Discord server via
-[slack-to-discord](https://github.com/pR0Ps/slack-to-discord),
-given Slack's
+[slack-to-discord](https://github.com/pR0Ps/slack-to-discord)
+(tested) or
+[Slackord2](https://github.com/thomasloupe/Slackord2) (untested).
+One motivation is Slack's
 [change in limits to the free plan](https://slack.com/help/articles/7050776459923-Pricing-changes-for-the-Pro-plan-and-updates-to-the-Free-plan).
 
 ## Usage
