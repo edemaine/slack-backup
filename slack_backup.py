@@ -1,27 +1,19 @@
-# Initially based on
+#!/usr/bin/python3
+# Code initially based on
 # https://gist.github.com/benoit-cty/a5855dea9a4b7af03f1f53c07ee48d3c
-
-'''
-Script to archive Slack messages from a channel list.
-You have to create a Slack Bot and invite him to private channels.
-View https://github.com/docmarionum1/slack-archive-bot for how to configure your account.
-Then provide the bot token to this script with the list of channels.
-'''
 
 import os
 TOKEN = os.environ['TOKEN']  # provide bot or user token (preferably user)
-FILE_TOKEN = os.environ.get('FILE_TOKEN')
+FILE_TOKEN = os.environ.get('FILE_TOKEN')  # file access token via public dump
 os.makedirs('backup', mode=0o700, exist_ok=True)
 
-# Import WebClient from Python SDK (github.com/slackapi/python-slack-sdk)
+# Import Slack Python SDK (https://github.com/slackapi/python-slack-sdk)
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
-import json
 
-# WebClient insantiates a client that can call API methods
-# When using Bolt, you can use either `app.client` or the `client` passed to listeners.
 client = WebClient(token=TOKEN)
 
+import json
 def save_json(data, filename):
   print('  Saving to', filename)
   os.makedirs(os.path.dirname(filename), mode=0o700, exist_ok=True)
