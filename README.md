@@ -29,6 +29,7 @@ One motivation is Slack's
    * `admin` (not sure whether this is necessary)
    * `channels:history`
    * `channels:read`
+   * `files:read`
    * `groups:history`
    * `groups:read`
    * `users:read`
@@ -42,6 +43,8 @@ One motivation is Slack's
 7. Assuming you're using the User Token, be sure that you have been added to
    all private channels that you want to backup.  (Even admins/owners cannot
    see all private channels in the channel list; they need to be invited.)
+   If you're using the Bot User Token, you probably need to invite the bot
+   to all desired channels.
 8. I recommend also running an
    [official Slack export of workspace data](https://slack.com/help/articles/201658943-Export-your-workspace-data).
    In JSON files containing file uploads, you'll see URLs ending with
@@ -52,7 +55,9 @@ One motivation is Slack's
    ```sh
    #!/bin/sh
    export TOKEN='xoxp-...'  # Bot User OAuth Token
+   # Optional settings: (you can omit them)
    export FILE_TOKEN='xoxe-...'  # file access export token from previous step
+   export DOWNLOAD=1  # download all message files locally too
    python slack_backup.py
    ```
 10. Run the `run` script via `./run` and wait.

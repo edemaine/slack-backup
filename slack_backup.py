@@ -2,9 +2,12 @@
 # Code initially based on
 # https://gist.github.com/benoit-cty/a5855dea9a4b7af03f1f53c07ee48d3c
 
+import urllib.request, urllib.parse
+
 import os
 TOKEN = os.environ['TOKEN']  # provide bot or user token (preferably user)
 FILE_TOKEN = os.environ.get('FILE_TOKEN')  # file access token via public dump
+DOWNLOAD = os.environ.get('DOWNLOAD')
 os.makedirs('backup', mode=0o700, exist_ok=True)
 
 # Import Slack Python SDK (https://github.com/slackapi/python-slack-sdk)
@@ -33,17 +36,41 @@ def backup_channel(channel_name, channel_id):
       print("\tGetting more...")
       result = client.conversations_history(channel=channel_id, cursor=result['response_metadata']['next_cursor'])
       all_messages += result["messages"]
-    print(f'  We have downloaded {len(all_messages)} messages from {channel_name}.')
+    print(f'  Downloaded {len(all_messages)} messages from {channel_name}.')
 
     # Rewrite private URLs to have token, like Slack's public dump
-    if FILE_TOKEN:
-      for message in all_messages:
-        if 'files' in message:
-          for file in message['files']:
-            for key, value in file.items():
-              if (key.startswith('url_private') or key.startswith('thumb')) \
-                and isinstance(value, str) and value.startswith('https://'):
+    filenames = {'all.json'}  # avoid overwriting json
+    count = 0
+    for message in all_messages:
+      if 'files' in message:
+        for file in message['files']:
+          count += 1
+          for key, value in list(file.items()):
+            if (key.startswith('url_private') or key.startswith('thumb')) \
+               and isinstance(value, str) and value.startswith('https://'):
+              if FILE_TOKEN:
                 file[key] = value + '?t=' + FILE_TOKEN
+              if DOWNLOAD and not key.endswith('_download'):
+                filename = os.path.basename(urllib.parse.urlparse(value).path)
+                if filename in filenames:
+                  i = 0
+                  base, ext = os.path.splitext(filename)
+                  def rewrite():
+                    return base + '_' + str(i) + ext
+                  while rewrite() in filenames:
+                    i += 1
+                  filename = rewrite()
+                filenames.add(filename)
+                # https://api.slack.com/types/file#authentication
+                with urllib.request.urlopen(urllib.request.Request(value,
+                       headers={'Authorization': 'Bearer ' + TOKEN})) as infile:
+                  with open(f'backup/{channel_name}/{filename}', 'wb') as outfile:
+                    outfile.write(infile.read())
+                file[key + '_file'] = f'{channel_name}/{filename}'
+    verbs = []
+    if DOWNLOAD: verbs.append('Downloaded')
+    if FILE_TOKEN: verbs.append('Linked')
+    if verbs: print(f'  {verbs.join(" & ")} {count} files from messages in {channel_name}.')
 
     save_json(all_messages, f'backup/{channel_name}/all.json')
   except SlackApiError as e:
