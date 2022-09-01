@@ -37,11 +37,17 @@ One motivation is Slack's
    Also write down the Bot User OAuth Token.
    (These directions are based on
    [this documentation](https://github.com/docmarionum1/slack-archive-bot).)
-6. I recommend also running an
+6. Under Install App, be sure to install the bot to the workspace
+   you'd like to backup.
+7. Assuming you're using the User Token, be sure that you have been added to
+   all private channels that you want to backup.  (Even admins/owners cannot
+   see all private channels in the channel list; they need to be invited.)
+8. I recommend also running an
    [official Slack export of workspace data](https://slack.com/help/articles/201658943-Export-your-workspace-data).
-   In JSON files containing file uploads you'll URLs ending with
+   In JSON files containing file uploads, you'll see URLs ending with
    `?t=xoxe-...`.  Write down that token too.
-7. Then I suggest creating a `run` script with the following contents:
+   (This is a temporary file access token; I think it lasts 7 days.)
+9. Then I suggest creating a `run` script with the following contents:
 
    ```sh
    #!/bin/sh
@@ -49,12 +55,48 @@ One motivation is Slack's
    export FILE_TOKEN='xoxe-...'  # file access export token from previous step
    python slack_backup.py
    ```
-8. Run the `run` script via `./run` and wait.
-9. The output will be in a created `backup` subdirectory.
-10. To produce a `backup.zip` file in the same format as a Slack export,
+10. Run the `run` script via `./run` and wait.
+11. The output will be in a created `backup` subdirectory.
+12. To produce a `backup.zip` file in the same format as a Slack export,
     do the following in a shell (assuming you have `zip` installed):
 
     ```sh
     cd backup
     zip -9r ../backup.zip *
     ```
+
+### Running slack-to-discord
+
+If you want to use [slack-to-discord](https://github.com/pR0Ps/slack-to-discord)
+to convert your export to Discord, here is my interpretation of
+[the instructions](https://github.com/pR0Ps/slack-to-discord#instructions):
+
+1. Create a Discord bot under the
+   [applications page](https://discord.com/developers/applications)
+   by clicking "New Application".
+   You probably want the bot to be private (don't click Public).
+2. Write down the Discord bot token.
+3. Invite the bot to your Discord server:
+   * Under OAuth2, URL generator, click the "bot" scope.
+   * Choose the following permissions:
+     * Manage Channels
+     * Send Messages
+     * Create Public Threads
+     * Send Messages in Threads
+     * Embed Links
+     * Attach Files
+     * Manage Messages
+   * Follow the generated URL, choose your server, and click "Authorize".
+4. Clone [the repository](https://github.com/pR0Ps/slack-to-discord)
+5. `pip install discord`
+6. I suggest creating a `run` script with the following contents:
+
+   ```sh
+   #!/bin/sh
+   python slack_to_discord.py --zipfile path/to/backup.zip --guild 'Name of Server' --token MTA...
+   ```
+
+   where the last part is your Discord bot token.
+7. Run the `run` script via `./run` and wait.
+   You can watch the messages roll into the server.
+   Occasionally the script may pause because of Discord's rate limits.
