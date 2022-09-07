@@ -105,3 +105,11 @@ to convert your export to Discord, here is my interpretation of
 7. Run the `run` script via `./run` and wait.
    You can watch the messages roll into the server.
    Occasionally the script may pause because of Discord's rate limits.
+
+## History
+
+This code was initially based on a
+[gist](https://gist.github.com/benoit-cty/a5855dea9a4b7af03f1f53c07ee48d3c)
+by [Benoit Courty](https://gist.github.com/benoit-cty).
+This fork adds channel listing, user listing, file downloads, and
+making the output format compatible with standard Slack dumps.
