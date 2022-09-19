@@ -70,7 +70,7 @@ def backup_channel(channel_name, channel_id):
     verbs = []
     if DOWNLOAD: verbs.append('Downloaded')
     if FILE_TOKEN: verbs.append('Linked')
-    if verbs: print(f'  {verbs.join(" & ")} {count} files from messages in {channel_name}.')
+    if verbs: print(f'  {" & ".join(verbs)} {count} files from messages in {channel_name}.')
 
     save_json(all_messages, f'backup/{channel_name}/all.json')
   except SlackApiError as e:
