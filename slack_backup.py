@@ -16,6 +16,47 @@ from slack_sdk.errors import SlackApiError
 
 client = WebClient(token=TOKEN)
 
+def all_channels():
+  channels = []
+  cursor = None
+  while True:
+    result = client.conversations_list(
+      types='private_channel',
+      cursor=cursor,
+    )
+    channels += result['channels']
+    cursor = result['response_metadata']['next_cursor']
+    if not cursor:
+      break
+  return channels
+
+def all_channel_members(channel_id):
+  members = []
+  cursor = None
+  while True:
+    result = client.conversations_members(
+      channel=channel_id,
+      cursor=cursor,
+    )
+    members += result['members']
+    cursor = result['response_metadata']['next_cursor']
+    if not cursor:
+      break
+  return members
+
+def all_users():
+  users = []
+  cursor = None
+  while True:
+    result = client.users_list(
+      cursor=cursor,
+    )
+    users += result['members']
+    cursor = result['response_metadata']['next_cursor']
+    if not cursor:
+      break
+  return users
+
 import json
 def save_json(data, filename):
   print('  Saving to', filename)
@@ -80,18 +121,11 @@ def backup_channel(channel_name, channel_id):
 def backup_all_channels():
   try:
     print('Listing channels')
-    result = client.conversations_list(
-        types="public_channel, private_channel",
-        limit=1000,
-    )
-    channels = result['channels']
+    channels = all_channels()
     print(f'  Got {len(channels)} channels')
     for channel in channels:
-      result = client.conversations_members(
-        channel=channel['id'],
-      )
-      channel['members'] = result['members']
-      print(f'  Got {len(result["members"])} members for channel {channel["name"]}')
+      channel['members'] = all_channel_members(channel['id'])
+      print(f'  Got {len(channel["members"])} members for channel {channel["name"]}')
   except SlackApiError as e:
     print("Error using conversation: {}".format(e))
     return
@@ -101,10 +135,8 @@ def backup_all_channels():
 
 def backup_all_users():
   try:
-    print('Listing users')
-    result = client.users_list()
-    users = result['members']
-    print(f'  Got {len(users)} users')
+    users = all_users()
+    print(f'  Got {len(users)} total users')
   except SlackApiError as e:
     print("Error using conversation: {}".format(e))
     return
