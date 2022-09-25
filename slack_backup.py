@@ -38,6 +38,8 @@ def backup_channel(channel_name, channel_id):
       all_messages += result["messages"]
     print(f'  Downloaded {len(all_messages)} messages from {channel_name}.')
 
+    save_json(all_messages, f'backup/{channel_name}/all.json')
+
     # Rewrite private URLs to have token, like Slack's public dump
     filenames = {'all.json'}  # avoid overwriting json
     count = 0
@@ -72,7 +74,6 @@ def backup_channel(channel_name, channel_id):
     if FILE_TOKEN: verbs.append('Linked')
     if verbs: print(f'  {" & ".join(verbs)} {count} files from messages in {channel_name}.')
 
-    save_json(all_messages, f'backup/{channel_name}/all.json')
   except SlackApiError as e:
       print("Error using conversation: {}".format(e))
 
