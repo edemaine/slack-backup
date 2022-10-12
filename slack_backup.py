@@ -38,7 +38,7 @@ def slack_list(field, info, operation, **dargs):
 
 def all_channels():
   return slack_list('channels', 'all channels',
-    client.conversations_list, types='private_channel')
+    client.conversations_list, types='public_channel, private_channel')
 
 def all_channel_members(channel):
   return slack_list('members', f'all members in channel {channel["name"]}',
