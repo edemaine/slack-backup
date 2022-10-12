@@ -73,38 +73,22 @@ One motivation is Slack's
 ### Running slack-to-discord
 
 If you want to use [slack-to-discord](https://github.com/pR0Ps/slack-to-discord)
-to convert your export to Discord, here is my interpretation of
-[the instructions](https://github.com/pR0Ps/slack-to-discord#instructions):
+to convert your export to Discord, follow [instructions in the project's
+README](https://github.com/pR0Ps/slack-to-discord#instructions).
 
-1. Create a Discord bot under the
-   [applications page](https://discord.com/developers/applications)
-   by clicking "New Application".
-   You probably want the bot to be private (don't click Public).
-2. Write down the Discord bot token.
-3. Invite the bot to your Discord server:
-   * Under OAuth2, URL generator, click the "bot" scope.
-   * Choose the following permissions:
-     * Manage Channels
-     * Send Messages
-     * Create Public Threads
-     * Send Messages in Threads
-     * Embed Links
-     * Attach Files
-     * Manage Messages
-   * Follow the generated URL, choose your server, and click "Authorize".
-4. Clone [the repository](https://github.com/pR0Ps/slack-to-discord)
-5. `pip install discord`
-6. I suggest creating a `run` script with the following contents:
+A slight tweak to the last few instructions on running slack-to-discord:
+I suggest creating a `run` script with the following contents:
 
-   ```sh
-   #!/bin/sh
-   python slack_to_discord.py --zipfile path/to/backup.zip --guild 'Name of Server' --token MTA...
-   ```
+```sh
+#!/bin/sh
+slack-to-discord --zipfile path/to/backup.zip --guild 'Name of Server' --token MTA...
+```
 
-   where the last part is your Discord bot token.
-7. Run the `run` script via `./run` and wait.
-   You can watch the messages roll into the server.
-   Occasionally the script may pause because of Discord's rate limits.
+where the last part is your Discord bot token.
+
+After creating that file, run it via `./run` and wait.
+You can watch the messages roll into the server.
+Occasionally the script may pause because of Discord's rate limits.
 
 ## History
 
