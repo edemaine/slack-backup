@@ -73,18 +73,22 @@ One motivation is Slack's
 ### Running slack-to-discord
 
 If you want to use [slack-to-discord](https://github.com/pR0Ps/slack-to-discord)
-to convert your export to Discord, there are [instructions in the project's
-README](https://github.com/pR0Ps/slack-to-discord#instructions) on setting it
-up and running it. I suggest a slight tweak to those instructions: After installing
-the project, create a `run` script with the following contents:
+to convert your export to Discord, follow [instructions in the project's
+README](https://github.com/pR0Ps/slack-to-discord#instructions).
+
+A slight tweak to the last few instructions on running slack-to-discord:
+I suggest creating a `run` script with the following contents:
+
 ```sh
 #!/bin/sh
 slack-to-discord --zipfile path/to/backup.zip --guild 'Name of Server' --token MTA...
 ```
+
 where the last part is your Discord bot token.
 
-After creating that file, run it via `./run` and wait. You can watch the messages roll
-into the server. Occasionally the script may pause because of Discord's rate limits.
+After creating that file, run it via `./run` and wait.
+You can watch the messages roll into the server.
+Occasionally the script may pause because of Discord's rate limits.
 
 ## History
 
