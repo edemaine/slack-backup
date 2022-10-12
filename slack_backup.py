@@ -15,47 +15,41 @@ from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
 client = WebClient(token=TOKEN)
+indent = 0
+
+def slack_list(field, info, operation, **dargs):
+  # Most WebClient methods are paginated, returning the first n results
+  # along with a "next_cursor" pointer to fetch the rest.
+  print(f'{" " * indent}Fetching {info or field}...')
+  try:
+    items = []
+    cursor = None
+    while True:
+      result = operation(cursor=cursor, **dargs)
+      items += result[field]
+      if 'response_metadata' not in result: break
+      cursor = result['response_metadata']['next_cursor']
+      if not cursor: break
+      print(f'{" " * indent}  Fetching more...')
+    print(f'{" " * indent}  Fetched {len(items)} {field}')
+  except SlackApiError as e:
+    print("ERROR USING CONVERSATION: {}".format(e))
+  return items
 
 def all_channels():
-  channels = []
-  cursor = None
-  while True:
-    result = client.conversations_list(
-      types='private_channel',
-      cursor=cursor,
-    )
-    channels += result['channels']
-    cursor = result['response_metadata']['next_cursor']
-    if not cursor:
-      break
-  return channels
+  return slack_list('channels', 'all channels',
+    client.conversations_list, types='private_channel')
 
-def all_channel_members(channel_id):
-  members = []
-  cursor = None
-  while True:
-    result = client.conversations_members(
-      channel=channel_id,
-      cursor=cursor,
-    )
-    members += result['members']
-    cursor = result['response_metadata']['next_cursor']
-    if not cursor:
-      break
-  return members
+def all_channel_members(channel):
+  return slack_list('members', f'all members in channel {channel["name"]}',
+    client.conversations_members, channel=channel['id'])
+
+def all_channel_messages(channel):
+  return slack_list('messages', f'all messages from channel {channel["name"]}',
+    client.conversations_history, channel=channel['id'])
 
 def all_users():
-  users = []
-  cursor = None
-  while True:
-    result = client.users_list(
-      cursor=cursor,
-    )
-    users += result['members']
-    cursor = result['response_metadata']['next_cursor']
-    if not cursor:
-      break
-  return users
+  return slack_list('members', 'all users', client.users_list)
 
 import json
 def save_json(data, filename):
@@ -64,22 +58,10 @@ def save_json(data, filename):
   with open(filename, 'w') as outfile:
     json.dump(data, outfile, indent=2)
 
-def backup_channel(channel_name, channel_id):
+def backup_channel(channel):
   try:
-    print('Getting messages from', channel_name)
-    # Call the conversations.history method using the WebClient
-    # conversations.history returns the first 100 messages by default
-    # These results are paginated
-    result = client.conversations_history(channel=channel_id)
-    all_messages = []
-    all_messages += result["messages"]
-    while result['has_more']:
-      print("\tGetting more...")
-      result = client.conversations_history(channel=channel_id, cursor=result['response_metadata']['next_cursor'])
-      all_messages += result["messages"]
-    print(f'  Downloaded {len(all_messages)} messages from {channel_name}.')
-
-    save_json(all_messages, f'backup/{channel_name}/all.json')
+    all_messages = all_channel_messages(channel)
+    save_json(all_messages, f'backup/{channel["name"]}/all.json')
 
     # Rewrite private URLs to have token, like Slack's public dump
     filenames = {'all.json'}  # avoid overwriting json
@@ -107,39 +89,30 @@ def backup_channel(channel_name, channel_id):
                 # https://api.slack.com/types/file#authentication
                 with urllib.request.urlopen(urllib.request.Request(value,
                        headers={'Authorization': 'Bearer ' + TOKEN})) as infile:
-                  with open(f'backup/{channel_name}/{filename}', 'wb') as outfile:
+                  with open(f'backup/{channel["name"]}/{filename}', 'wb') as outfile:
                     outfile.write(infile.read())
-                file[key + '_file'] = f'{channel_name}/{filename}'
+                file[key + '_file'] = f'{channel["name"]}/{filename}'
     verbs = []
     if DOWNLOAD: verbs.append('Downloaded')
     if FILE_TOKEN: verbs.append('Linked')
-    if verbs: print(f'  {" & ".join(verbs)} {count} files from messages in {channel_name}.')
+    if verbs: print(f'  {" & ".join(verbs)} {count} files from messages in {channel["name"]}.')
 
   except SlackApiError as e:
       print("Error using conversation: {}".format(e))
 
 def backup_all_channels():
-  try:
-    print('Listing channels')
-    channels = all_channels()
-    print(f'  Got {len(channels)} channels')
-    for channel in channels:
-      channel['members'] = all_channel_members(channel['id'])
-      print(f'  Got {len(channel["members"])} members for channel {channel["name"]}')
-  except SlackApiError as e:
-    print("Error using conversation: {}".format(e))
-    return
+  global indent
+  channels = all_channels()
+  indent += 2
+  for channel in channels:
+    channel['members'] = all_channel_members(channel)
+  indent -= 2
   save_json(channels, 'backup/channels.json')
   for channel in channels:
-    backup_channel(channel['name'], channel['id'])
+    backup_channel(channel)
 
 def backup_all_users():
-  try:
-    users = all_users()
-    print(f'  Got {len(users)} total users')
-  except SlackApiError as e:
-    print("Error using conversation: {}".format(e))
-    return
+  users = all_users()
   save_json(users, 'backup/users.json')
 
 if __name__ == "__main__":
