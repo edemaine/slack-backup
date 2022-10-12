@@ -97,7 +97,8 @@ def backup_channel(channel):
     if FILE_TOKEN: verbs.append('Linked')
     if verbs: print(f'  {" & ".join(verbs)} {count} files from messages in {channel["name"]}.')
 
-    save_json(all_messages, f'backup/{channel["name"]}/all.json')
+    if count and FILE_TOKEN:
+      save_json(all_messages, f'backup/{channel["name"]}/all.json')
 
   except SlackApiError as e:
       print("Error using conversation: {}".format(e))
