@@ -1,7 +1,7 @@
 # slack-backup
 
 This Python script downloads a backup of all Slack users, all channels
-(*including private channels*), and all messages in those channels.
+(*including private channels and Direct Messages*), and all messages in those channels.
 The produced dump is in the same format produced by an
 [official Slack export of workspace data](https://slack.com/help/articles/201658943-Export-your-workspace-data)
 (which works well for public channels but not private channels).
@@ -26,7 +26,6 @@ One motivation is Slack's
    (I've found the user token to work better than the bot token, but YMMV),
    add the following scopes:
 
-   * `admin` (not sure whether this is necessary)
    * `channels:history`
    * `channels:read`
    * `files:read`
@@ -34,6 +33,10 @@ One motivation is Slack's
    * `groups:read`
    * `users:read`
    * `users:read.email`
+   * `im:history`
+   * `im:read`
+   * `mpim:history`
+   * `mpim:read`
 
    Also write down the Bot User OAuth Token.
    (These directions are based on
@@ -45,24 +48,18 @@ One motivation is Slack's
    see all private channels in the channel list; they need to be invited.)
    If you're using the Bot User Token, you probably need to invite the bot
    to all desired channels.
-8. I recommend also running an
-   [official Slack export of workspace data](https://slack.com/help/articles/201658943-Export-your-workspace-data).
-   In JSON files containing file uploads, you'll see URLs ending with
-   `?t=xoxe-...`.  Write down that token too.
-   (This is a temporary file access token; I think it lasts 7 days.)
-9. Then I suggest creating a `run` script with the following contents:
+8. Then I suggest creating a `run` script with the following contents:
 
    ```sh
    #!/bin/sh
    export TOKEN='xoxp-...'  # Bot User OAuth Token
    # Optional settings: (you can omit them)
-   export FILE_TOKEN='xoxe-...'  # file access export token from previous step
    export DOWNLOAD=1  # download all message files locally too
    python slack_backup.py
    ```
-10. Run the `run` script via `./run` and wait.
-11. The output will be in a created `backup` subdirectory.
-12. To produce a `backup.zip` file in the same format as a Slack export,
+9. Run the `run` script via `./run` and wait.
+10. The output will be in a created `backup` subdirectory.
+11. To produce a `backup.zip` file in the same format as a Slack export,
     do the following in a shell (assuming you have `zip` installed):
 
     ```sh
@@ -95,5 +92,5 @@ Occasionally the script may pause because of Discord's rate limits.
 This code was initially based on a
 [gist](https://gist.github.com/benoit-cty/a5855dea9a4b7af03f1f53c07ee48d3c)
 by [Benoit Courty](https://gist.github.com/benoit-cty).
-This fork adds channel listing, user listing, file downloads, and
+This fork adds channel listing (including Direct Messages), user listing, file downloads, and
 making the output format compatible with standard Slack dumps.

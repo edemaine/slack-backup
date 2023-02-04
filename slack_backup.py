@@ -7,13 +7,16 @@ from urllib.error import HTTPError
 import http.client
 from random import randint
 from time import sleep
-
+import requests
 import json
 import os
+import re
 TOKEN = os.environ['TOKEN']  # provide bot or user token (preferably user)
 FILE_TOKEN = os.environ.get('FILE_TOKEN')  # file access token via public dump
 DOWNLOAD = os.environ.get('DOWNLOAD')
 os.makedirs('backup', mode=0o700, exist_ok=True)
+
+users = type('test', (), {})()
 
 # Import Slack Python SDK (https://github.com/slackapi/python-slack-sdk)
 from slack_sdk import WebClient
@@ -27,6 +30,12 @@ def save_json(data, filename):
   os.makedirs(os.path.dirname(filename), mode=0o700, exist_ok=True)
   with open(filename, 'w') as outfile:
     json.dump(data, outfile, indent=2)
+
+def format_name(x):
+  name = x.lower()
+  name = re.sub(r'[^a-z0-9_-]+', '_', name)
+  name = re.sub(r'_+', '_', name)
+  return name
 
 def backup_channel(channel_name, channel_id):
   try:
@@ -72,17 +81,40 @@ def backup_channel(channel_name, channel_id):
         for file in message['files']:
           count += 1
           for key, value in list(file.items()):
-            if (key.startswith('url_private') and isinstance(value, str)) and value.startswith('https://'):
+            if (key.startswith('url_private') or key.startswith('thumb')) \
+               and isinstance(value, str) and value.startswith('https://'):
               if FILE_TOKEN:
                 file[key] = value + '?t=' + FILE_TOKEN
               if DOWNLOAD and not key.endswith('_download'):
                 filename = os.path.basename(urllib.parse.urlparse(value).path)
+                if filename in filenames:
+                  i = 0
+                  base, ext = os.path.splitext(filename)
+                  def rewrite():
+                    return base + '_' + str(i) + ext
+                  while rewrite() in filenames:
+                    i += 1
+                  filename = rewrite()
                 filenames.add(filename)
-                # https://api.slack.com/types/file#authentication
                 try:
-                  with urllib.request.urlopen(urllib.request.Request(file[key])) as infile:
+                  # https://api.slack.com/types/file#authentication
+                  with urllib.request.urlopen(urllib.request.Request(value,
+                        headers={'Authorization': 'Bearer ' + TOKEN})) as infile:
                     with open(f'backup/{channel_name}/{msg_id}/{filename}', 'wb') as outfile:
                       outfile.write(infile.read())
+            # if (key.startswith('url_private') and isinstance(value, str)) and value.startswith('https://'):
+            #   if DOWNLOAD and not key.endswith('_download'):
+            #     filename = os.path.basename(urllib.parse.urlparse(value).path)
+            #     filenames.add(filename)
+            #     # https://api.slack.com/types/file#authentication
+            #     try:
+            #       r = requests.get(file[key], headers={'Authorization': 'Bearer %s' % TOKEN})
+            #       r.raise_for_status
+            #       file_data = r.content   # get binary content
+
+            #       # save file to disk
+            #       with open(f'backup/{channel_name}/{msg_id}/{filename}' , 'w+b') as outfile:
+            #         outfile.write(bytearray(file_data))
                 except http.client.IncompleteRead as e:
                   print(f' incomplete read {file[key]}')
                   outfile.write(e.partial)
@@ -94,7 +126,9 @@ def backup_channel(channel_name, channel_id):
                 except Exception as e:
                   print(f' Unknown: {e} ')
 
-                file[key + '_file'] = f'{channel_name}/{filename}'
+                # file[key + '_file'] = f'{channel_name}/{filename}'
+                file[key + '_file'] = f'{channel_name}/{msg_id}/{filename}'
+                
 
           # avoid slacks rate limit and/or timeouts, take a quick nap
           sleep(randint(1,3))
@@ -104,7 +138,9 @@ def backup_channel(channel_name, channel_id):
     if FILE_TOKEN: verbs.append('Linked')
     if verbs: print(f'  {" & ".join(verbs)} {count} files from messages in {channel_name}.')
 
+    # if count:
     save_json(all_messages, f'backup/{channel_name}/all.json')
+
   except SlackApiError as e:
       print("Error using conversation: {}".format(e))
 
@@ -112,7 +148,8 @@ def backup_all_channels():
   try:
     print('Listing channels')
     result = client.conversations_list(
-        types="public_channel, private_channel",
+        types="public_channel, private_channel, mpim, im",
+        # types="mpim, im",
         limit=1000,
     )
     channels = result['channels']
@@ -122,6 +159,22 @@ def backup_all_channels():
         channel=channel['id'],
       )
       channel['members'] = result['members']
+
+      if "name" in channel:
+        channel["name"] = format_name(channel["name"])
+      else:
+        member_name_list = []
+        for user_id in channel["members"]:
+          el = [x for x in users if x["id"] == user_id][0]
+          member_name_list.append(el["name"])
+
+        members_list = '-'.join(member_name_list)
+        if channel["user"] not in channel["members"]:
+          members_list += "-" + channel["user"]
+        members_list += "-" + channel["id"]
+
+        channel["name"] = format_name(members_list)
+
       print(f'  Got {len(result["members"])} members for channel {channel["name"]}')
   except SlackApiError as e:
     print("Error using conversation: {}".format(e))
@@ -134,6 +187,7 @@ def backup_all_users():
   try:
     print('Listing users')
     result = client.users_list()
+    global users
     users = result['members']
     print(f'  Got {len(users)} users')
   except SlackApiError as e:
