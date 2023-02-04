@@ -6,11 +6,9 @@ The produced dump is in the same format produced by an
 [official Slack export of workspace data](https://slack.com/help/articles/201658943-Export-your-workspace-data)
 (which works well for public channels but not private channels).
 
-The intended use-case for moving old Slack content over to a new
-Discord server via
-[slack-to-discord](https://github.com/pR0Ps/slack-to-discord)
-(tested) or
-[Slackord2](https://github.com/thomasloupe/Slackord2) (untested).
+The intended use-case is for moving old Slack content over to a new
+Discord server via bluescopedata's [slack-to-discord](https://github.com/bluescopedata/slack-to-discord) (This is an updated fork of [slack-to-discord](https://github.com/pR0Ps/slack-to-discord). It is necessary to use this fork with this update as it it imports files from your local backup, rather than from the slack url, perfoming some image shrinking and zipping in case of oversized files, before falling back to slack. It also supports the Direct Message uploads.)
+
 One motivation is Slack's
 [change in limits to the free plan](https://slack.com/help/articles/7050776459923-Pricing-changes-for-the-Pro-plan-and-updates-to-the-Free-plan).
 
@@ -53,7 +51,6 @@ One motivation is Slack's
    ```sh
    #!/bin/sh
    export TOKEN='xoxp-...'  # Bot User OAuth Token
-   # Optional settings: (you can omit them)
    export DOWNLOAD=1  # download all message files locally too
    python slack_backup.py
    ```
@@ -69,9 +66,9 @@ One motivation is Slack's
 
 ### Running slack-to-discord
 
-If you want to use [slack-to-discord](https://github.com/pR0Ps/slack-to-discord)
+If you want to use [slack-to-discord](https://github.com/bluescopedata/slack-to-discord)
 to convert your export to Discord, follow [instructions in the project's
-README](https://github.com/pR0Ps/slack-to-discord#instructions).
+README](https://github.com/bluescopedata/slack-to-discord#instructions).
 
 A slight tweak to the last few instructions on running slack-to-discord:
 I suggest creating a `run` script with the following contents:
