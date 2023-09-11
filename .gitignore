@@ -3,3 +3,7 @@ backup
 
 # Suggested script to run with token
 run
+run.sh
+
+# Miscellaneous
+.DS_Store
