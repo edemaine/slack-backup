@@ -56,6 +56,7 @@ One motivation is Slack's
    #!/bin/sh
    export TOKEN='xoxp-...'  # Bot User OAuth Token
    # Optional settings: (you can omit them)
+   export REPLIES=1   # download all replies (threads)
    export FILE_TOKEN='xoxe-...'  # file access export token from previous step
    export DOWNLOAD=1  # download all message files locally too
    python slack_backup.py

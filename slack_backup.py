@@ -6,6 +6,7 @@ import urllib.request, urllib.parse
 
 import os
 TOKEN = os.environ['TOKEN']  # provide bot or user token (preferably user)
+REPLIES = os.environ.get('REPLIES')
 FILE_TOKEN = os.environ.get('FILE_TOKEN')  # file access token via public dump
 DOWNLOAD = os.environ.get('DOWNLOAD')
 os.makedirs('backup', mode=0o700, exist_ok=True)
@@ -48,6 +49,10 @@ def all_channel_messages(channel):
   return slack_list('messages', f'all messages from channel {channel["name"]}',
     client.conversations_history, channel=channel['id'])
 
+def all_message_replies(channel, message):
+  return slack_list('messages', f'all replies for channel {channel["name"]}, ts {message["thread_ts"]}',
+    client.conversations_replies, channel=channel['id'], ts=message['thread_ts'])
+
 def all_users():
   return slack_list('members', 'all users', client.users_list)
 
@@ -62,6 +67,22 @@ def backup_channel(channel):
   try:
     all_messages = all_channel_messages(channel)
     save_json(all_messages, f'backup/{channel["name"]}/all.json')
+
+    # Get replies first in case they refer to additional files.
+    if REPLIES:
+      all_replies = []
+      for message in all_messages:
+        if 'reply_count' in message:
+          replies = all_message_replies(channel, message)
+          for reply in replies:
+            ts = reply['ts']
+            thread_ts = reply['thread_ts']
+            # Don't duplicate original message.
+            if ts != thread_ts:
+              all_replies.append(reply)
+      # Slack Export includes replies alongside messages, and
+      # slack-to-discord also expects this format.
+      all_messages += all_replies
 
     # Rewrite private URLs to have token, like Slack's public dump
     filenames = {'all.json'}  # avoid overwriting json
